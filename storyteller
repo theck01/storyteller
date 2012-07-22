@@ -1,0 +1,107 @@
+#!/bin/bash
+
+LETTER_SET="[A-Z0-9_\'\"\:\-]"
+SPACE_SET="[	 ]"
+END_PUNCT_SET="[\.\?\!]"
+COMMA_SET="[,\;]"
+
+# waiting times
+LETTER_WAIT=0.03
+SPACE_WAIT=0.07
+END_PUNCT_WAIT=0.15
+COMMA_WAIT=0.1
+DEFAULT_WAIT=0.05
+
+#cipher definition
+SET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_ \.\?\!\,\;\'\:\-\""
+KEY="zqr385h\'AgBND\!\._ clEV4PLMesijy0CJQU\:FTWXafkmn19\?\-GHRYbotwx6\,\;IKOSZdpuv2\"7"
+
+
+#function to ensure usage is correct
+function printUsage {
+  echo "$(basename $0):"
+  echo "ciphered communication program."
+  echo
+  echo "To encode a message from a text file (.txt) to protect its contents,"
+  echo "run the following to create a new ciphered text file:"
+  echo "  $(basename $0) -e <text filename>"
+  echo "The program will generate a new file: encoded_<text filename> in the"
+  echo "directory where the encoding script was run"
+  echo
+  echo "To decode an secret message and print its contents to the screen run:"
+  echo "  $(basename $0) -d <encrypted filename>"
+}
+
+# function applies sudo encryption (a large cartesian cipher) to the file
+# contents. Takes a filename as its only argument
+function encodeFile {
+
+  efile="encoded_$1"
+  printf "" > $efile  #clear files contents
+
+  while read line
+  do
+    echo $(echo $line | tr "$SET" "$KEY") >> $efile
+  done < $1
+}
+
+# funciton takes a single argument, the file to be displayed. Takes a filename
+# as its only argument
+function printFile {
+
+  while read eline
+  do
+
+    line=$(echo $eline | tr "$KEY" "$SET");
+
+    for ((i=0;i<${#line};i++))
+    do
+      ptime=0; #print time
+      cchar=${line:$i:1}
+
+      #determine time to print
+      if [[ "$cchar" =~ $LETTER_SET ]]
+      then
+        ptime=$LETTER_WAIT
+      elif [[ "$cchar" =~ $SPACE_SET ]]
+      then
+        ptime=$SPACE_WAIT
+      elif [[ "$cchar" =~ $END_PUNCT_SET ]]
+      then
+        ptime=$END_PUNCT_WAIT
+      elif [[ "$cchar" =~ $COMMA_SET ]]
+      then
+        ptime=$COMMA_WAIT
+      else
+        ptime=$DEFAULT_WAIT
+      fi
+
+      printf "%c" "$cchar"
+      sleep $ptime
+    done
+
+    echo
+    sleep $SPACE_WAIT
+
+  done < $1
+}
+
+# START SCRIPT
+
+#check usage
+if [[ $# -ne 2 ]] || [[ ! $1 =~ \-[ed] ]] || [[ ! -f $2 ]]
+then
+  printUsage
+  exit 1
+fi
+
+#if encoding a file
+if [[ $1 =~ -e ]]
+then
+  encodeFile $2
+  exit 0
+else
+  printFile $2
+fi
+
+
